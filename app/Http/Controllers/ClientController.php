@@ -22,25 +22,68 @@ class ClientController extends Controller
     {
         $user = Auth::user();
 
+        // Statistiques du dashboard
         $stats = [
             'commandes_total' => $user->commandes()->count(),
-            'commandes_en_cours' => $user->commandes()->whereIn('statut', ['en_attente', 'en_cours'])->count(),
-            'panier_items' => $user->getNombrePiecesPanier(),
-            'notifications_non_lues' => $user->getUnreadNotificationsCount()
+            'commandes_en_cours' => $user->commandes()
+                ->whereIn('statut', ['en_attente', 'confirmee', 'preparation', 'expediee'])
+                ->count(),
+            'panier_items' => $user->paniers()->sum('quantite'),
+            'favoris_count' => $user->favoris()->count(),
+            'notifications_non_lues' => $user->notifications()->whereNull('read_at')->count(),
+            'ventes_epaves' => $user->venteEpaves()->count()
         ];
 
+        // Commandes récentes (5 dernières)
         $commandesRecentes = $user->commandes()
-            ->with('lignes.piece')
+            ->with(['casse', 'pieces'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
+        // Notifications récentes (5 dernières)
         $notifications = $user->notifications()
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        return view('client.dashboard', compact('stats', 'commandesRecentes', 'notifications'));
+        // Pièces récemment consultées (simulation - à implémenter avec historique)
+        $piecesPopulaires = Piece::with(['vehicule', 'casse'])
+            ->where('disponible', true)
+            ->where('quantite', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit(4)
+            ->get();
+
+        // Casses à proximité (si géolocalisation disponible)
+        $cassesProches = [];
+        if ($user->latitude && $user->longitude) {
+            $cassesProches = User::where('role', 'casse')
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->get()
+                ->map(function ($casse) use ($user) {
+                    $distance = $this->calculateDistance(
+                        $user->latitude,
+                        $user->longitude,
+                        $casse->latitude,
+                        $casse->longitude
+                    );
+                    $casse->distance = round($distance, 1);
+                    return $casse;
+                })
+                ->where('distance', '<=', 50) // Dans un rayon de 50km
+                ->sortBy('distance')
+                ->take(3);
+        }
+
+        return view('client.dashboard', compact(
+            'stats',
+            'commandesRecentes',
+            'notifications',
+            'piecesPopulaires',
+            'cassesProches'
+        ));
     }
 
     public function recherchePieces(Request $request)

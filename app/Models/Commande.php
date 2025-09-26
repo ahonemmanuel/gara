@@ -47,4 +47,10 @@ class Commande extends Model
 
         return view('casse.*', compact('commandesEnAttente'));
     }
+
+
+    public function lignes()
+    {
+        return $this->hasMany(LigneCommande::class, 'commande_id');
+    }
 }

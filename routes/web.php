@@ -67,7 +67,6 @@ Route::prefix('casse')->middleware(['auth', 'verified', 'casse'])->group(functio
 
 
 // Routes pour les clients
-// Routes pour les clients
 Route::prefix('client')->middleware(['auth', 'verified', 'client'])->group(function () {
     // Routes existantes...
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('client.dashboard');
