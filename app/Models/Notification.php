@@ -1,40 +1,35 @@
 <?php
+
 // app/Models/Notification.php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
+        'commande_id',
         'type',
-        'title',
+        'titre',
         'message',
-        'data',
-        'read_at'
+        'lu',
+        'data'
     ];
 
     protected $casts = [
-        'data' => 'array',
-        'read_at' => 'datetime'
+        'lu' => 'boolean',
+        'data' => 'array'
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function markAsRead()
+    public function commande(): BelongsTo
     {
-        $this->update(['read_at' => now()]);
-    }
-
-    public function scopeUnread($query)
-    {
-        return $query->whereNull('read_at');
+        return $this->belongsTo(Commande::class);
     }
 }

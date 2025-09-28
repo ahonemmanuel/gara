@@ -1,121 +1,132 @@
 <?php
 
-use App\Http\Controllers\CasseNotificationController;
-use App\Http\Controllers\CasseVenteEpaveController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\CasseController;
-use App\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\{
+    DashboardController,
+    VehicleController,
+    PieceController,
+    PanierController,
+    CommandeController,
+    DemandeEpaveController,
+    SearchController,
+    NotificationController,
+    ProfileController
+};
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Routes publiques
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
-Route::get('/dashboard', function () {
-    $user = auth()->user();
+Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search/autocomplete', [SearchController::class, 'autocomplete'])->name('search.autocomplete');
 
-    return match($user->role->value) {
-        'casse' => redirect('/casse/dashboard'),
-        'client' => redirect('/client/dashboard'),
-        'admin' => redirect('/admin/dashboard'),
-        default => view('dashboard')
-    };
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-// Routes pour les casses automobiles
-// routes/web.php (ajout aux routes existantes)
-Route::prefix('casse')->middleware(['auth', 'verified', 'casse'])->group(function () {
-    // Routes existantes...
-    Route::get('/dashboard', [CasseController::class, 'dashboard'])->name('casse.dashboard');
-    Route::get('/vehicules', [CasseController::class, 'vehicules'])->name('casse.vehicules');
-    Route::get('/stock', [CasseController::class, 'stock'])->name('casse.stock');
-    Route::get('/commandes', [CasseController::class, 'commandes'])->name('casse.commandes');
-
-    // Nouvelles routes
-    Route::get('/vehicules/create', [CasseController::class, 'createVehicule'])->name('casse.vehicules.create');
-    Route::post('/vehicules', [CasseController::class, 'storeVehicule'])->name('casse.vehicules.store');
-
-    Route::get('/stock/create', [CasseController::class, 'createPiece'])->name('casse.stock.create');
-    Route::post('/stock', [CasseController::class, 'storePiece'])->name('casse.stock.store');
-    Route::get('/stock/{piece}/edit', [CasseController::class, 'editPiece'])->name('casse.stock.edit');
-    Route::put('/stock/{piece}', [CasseController::class, 'updatePiece'])->name('casse.stock.update');
-    Route::delete('/stock/{piece}', [CasseController::class, 'destroyPiece'])->name('casse.stock.destroy');
-
-    Route::put('/commandes/{commande}', [CasseController::class, 'updateCommandeStatut'])->name('casse.commandes.update');
-
-
-    Route::get('/ventes-epaves', [CasseVenteEpaveController::class, 'index'])->name('casse.ventes-epaves');
-    Route::get('/ventes-epaves/{venteEpave}', [CasseVenteEpaveController::class, 'show'])->name('casse.ventes-epaves.show');
-    Route::post('/ventes-epaves/{venteEpave}/evaluer', [CasseVenteEpaveController::class, 'evaluer'])->name('casse.ventes-epaves.evaluer');
-    Route::put('/ventes-epaves/{venteEpave}/statut', [CasseVenteEpaveController::class, 'updateStatut'])->name('casse.ventes-epaves.statut');
-
-
-// routes/web.php (ajouter cette route)
-    Route::get('/ventes-epaves/{venteEpave}/evaluer', [CasseVenteEpaveController::class, 'evaluerForm'])->name('casse.ventes-epaves.evaluer-form');
-    // Routes pour les notifications
-    Route::get('/notifications', [CasseNotificationController::class, 'index'])->name('casse.notifications');
-    Route::get('/notifications/{notification}', [CasseNotificationController::class, 'show'])->name('casse.notifications.show');
-    Route::post('/notifications/mark-all-read', [CasseNotificationController::class, 'markAllAsRead'])->name('casse.notifications.mark-all-read');
-    Route::delete('/notifications/{notification}', [CasseNotificationController::class, 'destroy'])->name('casse.notifications.destroy');
-
-    Route::get('/profile', [CasseController::class, 'profile'])->name('casse.profile');
-    Route::put('/profile', [CasseController::class, 'updateProfile'])->name('casse.profile.update');
-});
-
-
-
-
-
-// Routes pour les clients
-Route::prefix('client')->middleware(['auth', 'verified', 'client'])->group(function () {
-    // Routes existantes...
-    Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('client.dashboard');
-    Route::get('/recherche-pieces', [ClientController::class, 'recherchePieces'])->name('client.recherche-pieces');
-    Route::get('/panier', [ClientController::class, 'panier'])->name('client.panier');
-    Route::get('/vente-epaves', [ClientController::class, 'venteEpaves'])->name('client.vente-epaves');
-
-    Route::get('/pieces/{piece}', [ClientController::class, 'detailPiece'])->name('client.detail-piece');
-
-    // Nouvelles routes
-    Route::post('/panier/ajouter/{piece}', [ClientController::class, 'ajouterAuPanier'])->name('client.panier.ajouter');
-    Route::post('/panier/retirer/{panier}', [ClientController::class, 'retirerDuPanier'])->name('client.panier.retirer');
-    Route::post('/panier/update/{panier}', [ClientController::class, 'updateQuantitePanier'])->name('client.panier.update');
-    Route::post('/commander', [ClientController::class, 'passerCommande'])->name('client.passer-commande');
-
-
-    Route::get('/commandes', [ClientController::class, 'commandes'])->name('client.commandes');
-    Route::get('/commandes/{commande}', [ClientController::class, 'detailCommande'])->name('client.detail-commande');
-
-    Route::get('/favoris', [ClientController::class, 'favoris'])->name('client.favoris');
-    Route::post('/favoris/ajouter/{piece}', [ClientController::class, 'ajouterAuxFavoris'])->name('client.favoris.ajouter');
-    Route::post('/favoris/retirer/{piece}', [ClientController::class, 'retirerDesFavoris'])->name('client.favoris.retirer');
-
-    Route::post('/vente-epaves/creer', [ClientController::class, 'creerVenteEpave'])->name('client.vente-epaves.creer');
-    Route::get('/vente-epaves/{vente}', [ClientController::class, 'detailVenteEpave'])->name('client.vente-epaves.detail');
-
-    Route::get('/notifications', [ClientController::class, 'notifications'])->name('client.notifications');
-    Route::post('/notifications/{notification}/marquer-lue', [ClientController::class, 'marquerNotificationLue'])->name('client.notifications.marquer-lue');
-    Route::post('/notifications/marquer-toutes-lues', [ClientController::class, 'marquerToutesNotificationsLues'])->name('client.notifications.marquer-toutes-lues');
-
-    Route::get('/profile', [ClientController::class, 'profile'])->name('client.profile');
-    Route::post('/profile/update', [ClientController::class, 'updateProfile'])->name('client.profile.update');
-
-    Route::get('/pieces/{piece}', [ClientController::class, 'detailPiece'])->name('client.detail-piece');
-
-
-
-    Route::get('/profile', [ClientController::class, 'profile'])->name('client.profile');
-    Route::post('/profile', [ClientController::class, 'updateProfile'])->name('client.profile.update');
-});
-
-
-
-
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
+// Routes d'authentification (déjà définies par Breeze)
 require __DIR__.'/auth.php';
+
+// Routes protégées
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // Offres sur épaves
+    Route::post('/demandes_epaves/{demandeEpave}/offre', [DemandeEpaveController::class, 'faireOffre'])
+        ->name('demandes-epaves.faire-offre');
+
+    // Demandes d'épaves
+    Route::resource('demandes-epaves', DemandeEpaveController::class)
+        ->parameters(['demandes-epaves' => 'demandeEpave'])
+        ->names('demandes-epaves');
+
+    Route::post('/demandes-epaves/{demandeEpave}/accepter-offre/{offre}', [DemandeEpaveController::class, 'accepterOffre'])
+        ->name('demandes-epaves.accepter-offre');
+
+
+
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profil utilisateur
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'show'])->name('show');
+        Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
+        Route::put('/update', [ProfileController::class, 'update'])->name('update');
+        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+    });
+
+    // Notifications
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::put('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::put('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
+    });
+
+    // Véhicules
+    Route::resource('vehicles', VehicleController::class);
+
+    // Pièces détachées
+    Route::resource('pieces', PieceController::class);
+
+    // Routes spécifiques aux clients
+    Route::middleware(['role:client'])->group(function () {
+
+        // Panier
+        Route::prefix('panier')->name('panier.')->group(function () {
+            Route::get('/', [PanierController::class, 'index'])->name('index');
+            Route::post('/add/{piece}', [PanierController::class, 'add'])->name('add');
+            Route::put('/items/{item}', [PanierController::class, 'update'])->name('update');
+            Route::delete('/items/{item}', [PanierController::class, 'remove'])->name('remove');
+            Route::delete('/clear', [PanierController::class, 'clear'])->name('clear');
+        });
+
+
+    });
+
+    // Routes spécifiques aux casses
+    Route::middleware(['role:casse'])->group(function () {
+
+        // Gestion des stocks (véhicules et pièces)
+        Route::prefix('gestion')->name('gestion.')->group(function () {
+            Route::get('/stocks', function () {
+                return view('gestion.stocks');
+            })->name('stocks');
+
+            Route::get('/commandes', function () {
+                $commandes = \App\Models\Commande::whereHas('items.piece.vehicle', function($query) {
+                    $query->where('casse_id', auth()->id());
+                })->with(['user', 'items.piece'])->latest()->paginate(10);
+
+                return view('gestion.commandes', compact('commandes'));
+            })->name('commandes');
+        });
+
+
+    });
+
+    // Commandes (accessibles aux clients et casses)
+    Route::resource('commandes', CommandeController::class)->except(['edit', 'update', 'destroy']);
+    Route::put('/commandes/{commande}/statut', [CommandeController::class, 'updateStatut'])
+        ->name('commandes.update-statut');
+    Route::delete('/commandes/{commande}/annuler', [CommandeController::class, 'annuler'])
+        ->name('commandes.annuler');
+
+    // Routes administrateur
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/users', function () {
+            $users = \App\Models\User::with(['vehicles', 'commandes'])->paginate(20);
+            return view('admin.users.index', compact('users'));
+        })->name('users.index');
+
+        Route::get('/statistics', function () {
+            return view('admin.statistics');
+        })->name('statistics');
+
+        Route::get('/settings', function () {
+            return view('admin.settings');
+        })->name('settings');
+    });
+});

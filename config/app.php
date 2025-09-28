@@ -1,6 +1,8 @@
 <?php
 
 
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+
 return [
 
     /*

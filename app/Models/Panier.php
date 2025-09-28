@@ -1,27 +1,33 @@
 <?php
+
+
+
+
 // app/Models/Panier.php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Panier extends Model
 {
-    use HasFactory;
+    protected $fillable = ['user_id'];
 
-    protected $fillable = [
-        'client_id',
-        'piece_id',
-        'quantite'
-    ];
-
-    public function client()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class);
     }
 
-    public function piece()
+    public function items(): HasMany
     {
-        return $this->belongsTo(Piece::class);
+        return $this->hasMany(PanierItem::class);
+    }
+
+    public function getTotal()
+    {
+        return $this->items->sum(function($item) {
+            return $item->quantite * $item->piece->prix;
+        });
     }
 }
