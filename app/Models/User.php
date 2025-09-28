@@ -4,12 +4,16 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // <-- Corrige ici
+
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -23,6 +27,19 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function getTotalPanier()
+    {
+        return $this->panierItems()->with('piece')->get()->sum(function ($item) {
+            return $item->quantite * $item->piece->prix;
+        });
+    }
+
+
+
+    public function getNombrePiecesPanier()
+    {
+        return $this->panierItems()->sum('quantite');
+    }
 
     // Dans app/Models/User.php, ajoutez ces méthodes :
 
@@ -33,39 +50,43 @@ class User extends Authenticatable
 
     public function favoris()
     {
-        return $this->hasMany(Favoris::class, 'client_id');
+        return $this->hasMany(Favoris::class, 'user_id');
     }
 
-    public function commandes()
-    {
-        return $this->hasMany(Commande::class, 'client_id');
-    }
 
     public function venteEpaves()
     {
         return $this->hasMany(VenteEpave::class, 'client_id');
     }
 
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
-    }
 
     public function recherchesSauvegardees()
     {
         return $this->hasMany(RechercheSauvegardee::class, 'client_id');
     }
 
-    public function getNombrePiecesPanier()
+
+
+
+
+    public function panierItems()
     {
-        return $this->paniers()->sum('quantite');
+        return $this->hasManyThrough(
+            PanierItem::class,
+            Panier::class,
+            'user_id',   // clé étrangère sur panier
+            'panier_id',   // clé étrangère sur panier_items
+            'id',          // clé primaire user
+            'id'           // clé primaire panier
+        );
     }
 
-    public function getTotalPanier()
+
+
+
+    public function panier()
     {
-        return $this->paniers()->with('piece')->get()->sum(function ($panier) {
-            return $panier->quantite * $panier->piece->prix;
-        });
+        return $this->hasOne(Panier::class, 'user_id');
     }
 
     public function getUnreadNotificationsCount()
@@ -104,14 +125,51 @@ class User extends Authenticatable
     }
 
     // Méthodes helper pour vérifier les rôles
-    public function isClient(): bool
+
+
+
+
+// app/Models/User.php (ajouter ces relations)
+    public function vehicules()
     {
-        return $this->role === UserRole::CLIENT;
+        return $this->hasMany(Vehicle::class, 'casse_id');
     }
 
+    public function pieces()
+    {
+        return $this->hasMany(Piece::class, 'vehicle_id');
+    }
+
+
+
+    // ... existing code ...
+
+    // Nouvelles relations
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class, 'casse_id');
+    }
+
+
+    public function commandes(): HasMany
+    {
+        return $this->hasMany(Commande::class);
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    // Méthodes utilitaires
     public function isCasse(): bool
     {
         return $this->role === UserRole::CASSE;
+    }
+
+    public function isClient(): bool
+    {
+        return $this->role === UserRole::CLIENT;
     }
 
     public function isAdmin(): bool
@@ -119,16 +177,23 @@ class User extends Authenticatable
         return $this->role === UserRole::ADMIN;
     }
 
-
-// app/Models/User.php (ajouter ces relations)
-    public function vehicules()
+    // Créer le panier automatiquement pour les clients
+    protected static function booted()
     {
-        return $this->hasMany(Vehicule::class, 'casse_id');
+        static::created(function ($user) {
+            if ($user->isClient()) {
+                $user->panier()->create();
+            }
+        });
     }
 
-    public function pieces()
+
+    // app/Models/User.php
+
+    public function demandesEpaves()
     {
-        return $this->hasMany(Piece::class, 'casse_id');
+        return $this->hasMany(DemandeEpave::class, 'user_id'); // ou 'client_id' selon ta colonne
     }
+
 
 }

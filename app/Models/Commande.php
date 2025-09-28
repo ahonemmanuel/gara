@@ -1,56 +1,43 @@
 <?php
 
+
+
+// app/Models/Commande.php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Commande extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'client_id',
-        'casse_id',
+        'user_id',
         'numero_commande',
         'statut',
         'total',
         'adresse_livraison',
-        'methode_paiement',
-        'date_commande'
+        'telephone_livraison',
+        'mode_paiement',
+        'statut_paiement',
+        'notes'
     ];
 
-    protected $casts = [
-        'total' => 'decimal:2',
-        'date_commande' => 'datetime'
-    ];
-
-    public function client()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class);
     }
 
-    public function casse()
+    public function items(): HasMany
     {
-        return $this->belongsTo(User::class, 'casse_id');
+        return $this->hasMany(CommandeItem::class);
     }
 
-    public function pieces()
+    public function notifications(): HasMany
     {
-        return $this->belongsToMany(Piece::class, 'commande_piece')
-            ->withPivot('quantite', 'prix_unitaire');
-    }
-
-    public function index()
-    {
-        $commandesEnAttente = Commande::where('status', 'pending')->count();
-
-        return view('casse.*', compact('commandesEnAttente'));
-    }
-
-
-    public function lignes()
-    {
-        return $this->hasMany(LigneCommande::class, 'commande_id');
+        return $this->hasMany(Notification::class);
     }
 }
+
+
+
