@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     DashboardController,
-    VehicleController,
     PieceController,
     PanierController,
     CommandeController,
@@ -27,29 +26,11 @@ Route::get('/', function () {
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 Route::get('/search/autocomplete', [SearchController::class, 'autocomplete'])->name('search.autocomplete');
 
-// Routes d'authentification (déjà définies par Breeze)
+// Routes d'authentification
 require __DIR__.'/auth.php';
 
 // Routes protégées
 Route::middleware(['auth', 'verified'])->group(function () {
-
-// Offres sur épaves - accessible à tous (clients ET casses)
-    Route::post('/demandes_epaves/{demandeEpave}/offre', [DemandeEpaveController::class, 'faireOffre'])
-        ->name('demandes-epaves.faire-offre');
-
-    // NOUVEAU : Retirer une offre
-    Route::delete('/demandes_epaves/{demandeEpave}/offre/{offre}', [DemandeEpaveController::class, 'retirerOffre'])
-        ->name('demandes-epaves.retirer-offre');
-
-    // Demandes d'épaves - accessible à tous
-    Route::resource('demandes-epaves', DemandeEpaveController::class)
-        ->parameters(['demandes-epaves' => 'demandeEpave'])
-        ->names('demandes-epaves');
-
-    Route::post('/demandes-epaves/{demandeEpave}/accepter-offre/{offre}', [DemandeEpaveController::class, 'accepterOffre'])
-        ->name('demandes-epaves.accepter-offre');
-
-
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -69,11 +50,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
     });
 
-    // Véhicules
-    Route::resource('vehicles', VehicleController::class);
-
-    // Pièces détachées
+    // Pièces détachées - accessible à tous
     Route::resource('pieces', PieceController::class);
+
+    // Demandes d'épaves - accessible à tous
+    Route::resource('demandes-epaves', DemandeEpaveController::class)
+        ->parameters(['demandes-epaves' => 'demandeEpave'])
+        ->names('demandes-epaves');
+
+    Route::post('/demandes_epaves/{demandeEpave}/offre', [DemandeEpaveController::class, 'faireOffre'])
+        ->name('demandes-epaves.faire-offre');
+
+    Route::delete('/demandes_epaves/{demandeEpave}/offre/{offre}', [DemandeEpaveController::class, 'retirerOffre'])
+        ->name('demandes-epaves.retirer-offre');
+
+    Route::post('/demandes-epaves/{demandeEpave}/accepter-offre/{offre}', [DemandeEpaveController::class, 'accepterOffre'])
+        ->name('demandes-epaves.accepter-offre');
 
     // Routes spécifiques aux clients
     Route::middleware(['role:client'])->group(function () {
@@ -87,16 +79,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/clear', [PanierController::class, 'clear'])->name('clear');
         });
 
-
+        // Commandes
+        Route::resource('commandes', CommandeController::class)->except(['edit', 'update', 'destroy']);
+        Route::delete('/commandes/{commande}/annuler', [CommandeController::class, 'annuler'])
+            ->name('commandes.annuler');
     });
 
     // Routes spécifiques aux casses
     Route::middleware(['role:casse'])->group(function () {
 
-        // Gestion des stocks (véhicules et pièces)
+        // Gestion des stocks et commandes
         Route::prefix('gestion')->name('gestion.')->group(function () {
             Route::get('/stocks', function () {
-                return view('gestion.stocks');
+                $vehicles = auth()->user()->vehicles()->with('pieces')->get();
+                $totalPieces = auth()->user()->pieces()->count();
+                $totalStock = auth()->user()->pieces()->sum('quantite');
+                $piecesDisponibles = auth()->user()->pieces()->where('disponible', true)->count();
+
+                return view('gestion.stocks', compact('vehicles', 'totalPieces', 'totalStock', 'piecesDisponibles'));
             })->name('stocks');
 
             Route::get('/commandes', function () {
@@ -108,15 +108,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             })->name('commandes');
         });
 
-
+        // Mise à jour statut commande
+        Route::put('/commandes/{commande}/statut', [CommandeController::class, 'updateStatut'])
+            ->name('commandes.update-statut');
     });
-
-    // Commandes (accessibles aux clients et casses)
-    Route::resource('commandes', CommandeController::class)->except(['edit', 'update', 'destroy']);
-    Route::put('/commandes/{commande}/statut', [CommandeController::class, 'updateStatut'])
-        ->name('commandes.update-statut');
-    Route::delete('/commandes/{commande}/annuler', [CommandeController::class, 'annuler'])
-        ->name('commandes.annuler');
 
     // Routes administrateur
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {

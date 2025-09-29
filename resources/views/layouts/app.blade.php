@@ -44,7 +44,7 @@
         <div class="position-sticky pt-3">
             <div class="text-center text-white mb-4">
                 <h4>AutoCasse Pro</h4>
-                <small>Gestion de casse automobile</small>
+                <small>Casse automobile</small>
             </div>
 
             <ul class="nav flex-column">
@@ -58,13 +58,8 @@
                     @if(auth()->user()->role->value === 'casse')
                         <!-- Menu Casse uniquement -->
                         <li class="nav-item">
-                            <a class="nav-link {{ Request::is('vehicles*') ? 'active' : '' }}" href="{{ route('vehicles.index') }}">
-                                <i class="fas fa-car me-2"></i> Véhicules
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link {{ Request::is('pieces*') ? 'active' : '' }}" href="{{ route('pieces.index') }}">
-                                <i class="fas fa-cog me-2"></i> Pièces détachées
+                                <i class="fas fa-cog me-2"></i> Gestion des pièces
                             </a>
                         </li>
                         <li class="nav-item">
@@ -77,9 +72,8 @@
                                 <i class="fas fa-boxes me-2"></i> Gestion des stocks
                             </a>
                         </li>
-                        <!-- NOUVEAU : Mes épaves à vendre -->
                         <li class="nav-item">
-                            <a class="nav-link {{ Request::is('demandes-epaves/create') || (Request::is('demandes-epaves/*') && auth()->user()->demandes_epaves->contains('id', request()->route('demandeEpave'))) ? 'active' : '' }}"
+                            <a class="nav-link {{ Request::is('demandes-epaves/create') ? 'active' : '' }}"
                                href="{{ route('demandes-epaves.create') }}">
                                 <i class="fas fa-car-crash me-2"></i> Vendre une épave
                             </a>
@@ -96,11 +90,6 @@
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('pieces*') ? 'active' : '' }}" href="{{ route('pieces.index') }}">
                                 <i class="fas fa-cog me-2"></i> Rechercher pièces
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ Request::is('vehicles*') ? 'active' : '' }}" href="{{ route('vehicles.index') }}">
-                                <i class="fas fa-car me-2"></i> Véhicules d'occasion
                             </a>
                         </li>
                         <li class="nav-item">
@@ -121,12 +110,11 @@
                                 <i class="fas fa-car-crash me-2"></i> Vendre mon épave
                             </a>
                         </li>
+                    @endif
 
 
-
-
-                    @elseif(auth()->user()->role->value === 'admin')
-                        <!-- Menu Admin uniquement -->
+                    @if(auth()->user()->role->value === 'admin')
+                        Menu Admin uniquement -->
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('admin/users*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
                                 <i class="fas fa-users me-2"></i> Utilisateurs
@@ -197,14 +185,7 @@
                     </ul>
 
                     <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <form class="d-flex" action="{{ route('search') }}" method="GET">
-                                <input class="form-control me-2" type="search" name="q" placeholder="Rechercher...">
-                                <button class="btn btn-outline-primary" type="submit">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </form>
-                        </li>
+
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle"></i>

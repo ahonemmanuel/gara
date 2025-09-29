@@ -80,7 +80,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Véhicules récents</h6>
-                    <a href="{{ route('vehicles.create') }}" class="btn btn-sm btn-primary">
+                    <a href="{{ route('pieces.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus"></i> Ajouter
                     </a>
                 </div>
@@ -124,10 +124,10 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('vehicles.show', $vehicle) }}" class="btn btn-outline-primary">
+                                                <a href="{{ route('pieces.show', $vehicle) }}" class="btn btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('vehicles.edit', $vehicle) }}" class="btn btn-outline-secondary">
+                                                <a href="{{ route('pieces.edit', $vehicle) }}" class="btn btn-outline-secondary">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                             </div>

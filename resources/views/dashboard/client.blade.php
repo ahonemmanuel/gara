@@ -10,9 +10,7 @@
                 <a href="{{ route('pieces.index') }}" class="btn btn-primary">
                     <i class="fas fa-cog"></i> Parcourir les pièces
                 </a>
-                <a href="{{ route('vehicles.index') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-car"></i> Voir les véhicules
-                </a>
+
             </div>
         </div>
 
@@ -314,11 +312,7 @@
                                     <i class="fas fa-cog me-1"></i> Pièces détachées
                                 </a>
                             </div>
-                            <div class="col-6">
-                                <a href="{{ route('vehicles.index') }}" class="btn btn-outline-info w-100">
-                                    <i class="fas fa-car me-1"></i> Véhicules
-                                </a>
-                            </div>
+
                             <div class="col-6">
                                 <a href="{{ route('demandes-epaves.create') }}" class="btn btn-outline-warning w-100">
                                     <i class="fas fa-car-crash me-1"></i> Vendre mon épave
