@@ -111,71 +111,123 @@
                 </div>
 
                 <!-- Offres (visible pour le propriétaire) -->
-                @if(auth()->user()->isClient() && $demandeEpave->user_id === auth()->id())
+                <!-- Offres (visible pour le propriétaire ET pour ceux qui ont fait une offre) -->
+                @if(
+                    (auth()->user()->id === $demandeEpave->user_id) ||
+                    $demandeEpave->offres->where('user_id', auth()->id())->count() > 0
+                )
                     <div class="card shadow">
                         <div class="card-header">
-                            <h5 class="m-0">Offres reçues ({{ $demandeEpave->offres->count() }})</h5>
+                            <h5 class="m-0">
+                                @if(auth()->user()->id === $demandeEpave->user_id)
+                                    Offres reçues ({{ $demandeEpave->offres->count() }})
+                                @else
+                                    Mon offre
+                                @endif
+                            </h5>
                         </div>
                         <div class="card-body">
                             @if($demandeEpave->offres->count() > 0)
                                 <div class="list-group">
                                     @foreach($demandeEpave->offres as $offre)
-                                        <div class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h6 class="mb-1">{{ $offre->casse->nom_entreprise }}</h6>
-                                                    <p class="mb-1">
-                                                        <strong class="text-success">{{ number_format($offre->prix_offert, 0, ',', ' ') }} €</strong>
-                                                    </p>
-                                                    @if($offre->message)
-                                                        <p class="mb-1">{{ $offre->message }}</p>
-                                                    @endif
-                                                    <small class="text-muted">Offre faite le {{ $offre->created_at->format('d/m/Y H:i') }}</small>
-                                                </div>
-                                                <div>
-                                                    @if($demandeEpave->statut === 'en_attente')
-                                                        <form action="{{ route('demandes-epaves.accepter-offre', ['demandeEpave' => $demandeEpave->id, 'offre' => $offre->id]) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-success btn-sm"
-                                                                    onclick="return confirm('Accepter cette offre ?')">
-                                                                <i class="fas fa-check"></i> Accepter
-                                                            </button>
-                                                        </form>
+                                        <!-- Afficher toutes les offres si propriétaire, sinon seulement la sienne -->
+                                        @if(auth()->user()->id === $demandeEpave->user_id || $offre->user_id === auth()->id())
+                                            <div class="list-group-item">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">
+                                                            {{ $offre->user->name }}
+                                                            <span class="badge bg-{{ $offre->user->role->value === 'casse' ? 'success' : 'primary' }}">
+                                                {{ ucfirst($offre->user->role->value) }}
+                                            </span>
+                                                            @if($offre->user->role->value === 'casse' && $offre->user->nom_entreprise)
+                                                                <small class="text-muted">({{ $offre->user->nom_entreprise }})</small>
+                                                            @endif
+                                                        </h6>
+                                                        <p class="mb-1">
+                                                            <strong class="text-success fs-5">{{ number_format($offre->prix_offert, 0, ',', ' ') }} €</strong>
+                                                        </p>
+                                                        @if($offre->message)
+                                                            <p class="mb-1 text-muted">{{ $offre->message }}</p>
+                                                        @endif
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-clock"></i> {{ $offre->created_at->format('d/m/Y à H:i') }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="ms-3">
+                                                        @if($demandeEpave->statut === 'en_attente')
+                                                            <!-- Boutons pour le propriétaire -->
+                                                            @if(auth()->user()->id === $demandeEpave->user_id)
+                                                                <form action="{{ route('demandes-epaves.accepter-offre', ['demandeEpave' => $demandeEpave->id, 'offre' => $offre->id]) }}"
+                                                                      method="POST" class="d-inline">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                                            onclick="return confirm('Accepter cette offre de {{ number_format($offre->prix_offert, 0, ',', ' ') }} € ?')">
+                                                                        <i class="fas fa-check"></i> Accepter
+                                                                    </button>
+                                                                </form>
+                                                            @endif
 
-                                                    @elseif($offre->statut === 'accepte')
-                                                        <span class="badge bg-success">Offre acceptée</span>
-                                                    @endif
+                                                            <!-- NOUVEAU : Bouton pour retirer sa propre offre -->
+                                                            @if($offre->user_id === auth()->id())
+                                                                <form action="{{ route('demandes-epaves.retirer-offre', ['demandeEpave' => $demandeEpave->id, 'offre' => $offre->id]) }}"
+                                                                      method="POST" class="d-inline">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-danger btn-sm"
+                                                                            onclick="return confirm('Retirer votre offre ?')">
+                                                                        <i class="fas fa-times"></i> Retirer l'offre
+                                                                    </button>
+                                                                </form>
+                                                            @endif
+                                                        @elseif($offre->statut === 'accepte')
+                                                            <span class="badge bg-success fs-6">
+                                                <i class="fas fa-check-circle"></i> Offre acceptée
+                                            </span>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        @endif
                                     @endforeach
                                 </div>
                             @else
                                 <div class="text-center py-4">
                                     <i class="fas fa-gavel fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Aucune offre reçue pour le moment</p>
+                                    <p class="text-muted">Aucune offre pour le moment</p>
                                 </div>
                             @endif
                         </div>
                     </div>
                 @endif
+
+
             </div>
+
+
+
+
+
 
             <!-- Sidebar -->
             <div class="col-lg-4">
+                <!-- Actions -->
                 <!-- Actions -->
                 <div class="card shadow mb-4">
                     <div class="card-header">
                         <h6 class="m-0">Actions</h6>
                     </div>
                     <div class="card-body">
-                        @if(auth()->user()->isClient() && $demandeEpave->user_id === auth()->id())
+                        @if(auth()->user()->id === $demandeEpave->user_id)
+                            <!-- Actions pour le propriétaire -->
                             <div class="d-grid gap-2">
-                                @if($demandeEpave->statut === 'en_attente')
-                                    <a href="{{ route('demandes-epaves.edit', $demandeEpave) }}" class="btn btn-outline-primary">
-                                        <i class="fas fa-edit"></i> Modifier la demande
-                                    </a>
+                                <!-- Modification toujours accessible -->
+                                <a href="{{ route('demandes-epaves.edit', $demandeEpave) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Modifier la demande
+                                </a>
 
+                                <!-- Suppression seulement si en attente -->
+                                @if($demandeEpave->statut === 'en_attente')
                                     <form action="{{ route('demandes-epaves.destroy', $demandeEpave) }}" method="POST" class="d-grid">
                                         @csrf
                                         @method('DELETE')
@@ -188,14 +240,16 @@
                             </div>
                         @endif
 
-                        @if(auth()->user()->isCasse() && $peutFaireOffre)
+                        @if($peutFaireOffre && $demandeEpave->statut === 'en_attente')
+                            <!-- Formulaire pour faire une offre -->
                             <div class="mt-3" id="faire-offre">
                                 <h6>Faire une offre</h6>
                                 <form action="{{ route('demandes-epaves.faire-offre', $demandeEpave) }}" method="POST">
                                     @csrf
                                     <div class="mb-3">
                                         <label for="prix_offert" class="form-label">Prix offert (€) *</label>
-                                        <input type="number" step="0.01" class="form-control" id="prix_offert" name="prix_offert" required>
+                                        <input type="number" step="0.01" class="form-control" id="prix_offert"
+                                               name="prix_offert" required min="1">
                                     </div>
                                     <div class="mb-3">
                                         <label for="message" class="form-label">Message (optionnel)</label>
@@ -206,6 +260,10 @@
                                         <i class="fas fa-gavel"></i> Soumettre l'offre
                                     </button>
                                 </form>
+                            </div>
+                        @elseif($demandeEpave->hasOffreFrom(auth()->id()) && $demandeEpave->statut === 'en_attente')
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Vous avez déjà fait une offre sur cette épave.
                             </div>
                         @endif
                     </div>

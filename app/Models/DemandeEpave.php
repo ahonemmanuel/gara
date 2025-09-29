@@ -72,7 +72,7 @@ class DemandeEpave extends Model
 
     public function hasOffreFrom($casseId)
     {
-        return $this->offres()->where('casse_id', $casseId)->exists();
+        return $this->offres()->where('user_id', $casseId)->exists();
     }
 }
 

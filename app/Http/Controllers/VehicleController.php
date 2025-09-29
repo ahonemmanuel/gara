@@ -76,6 +76,27 @@ class VehicleController extends Controller
         return view('vehicles.create');
     }
 
+
+    function generateUniqueNumeroChassis(): string
+    {
+        // Récupérer le dernier enregistrement
+        $lastVehicle = Vehicle::orderBy('id', 'desc')->first();
+
+        if (!$lastVehicle) {
+            // Si aucun enregistrement, on commence par le premier
+            return 'CH-00001';
+        }
+
+        // Extraire la partie numérique (après CH-)
+        $lastNumber = (int) str_replace('CH-', '', $lastVehicle->numero_chassis);
+
+        // Incrémenter
+        $newNumber = $lastNumber + 1;
+
+        // Générer le nouveau code formaté avec 5 chiffres
+        return 'CH-' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+    }
+
     public function store(Request $request)
     {
 
@@ -100,7 +121,7 @@ class VehicleController extends Controller
         ]);
 
         $validated['casse_id'] = Auth::id();
-        $validated['numero_chassis'] = 'fghjk';
+        $validated['numero_chassis'] = $this->generateUniqueNumeroChassis();
         $validated['date_arrivee'] = now()->toDateString(); // ex: 2025-09-27
 
         // Upload photo principale

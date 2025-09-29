@@ -33,11 +33,15 @@ require __DIR__.'/auth.php';
 // Routes protégées
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Offres sur épaves
+// Offres sur épaves - accessible à tous (clients ET casses)
     Route::post('/demandes_epaves/{demandeEpave}/offre', [DemandeEpaveController::class, 'faireOffre'])
         ->name('demandes-epaves.faire-offre');
 
-    // Demandes d'épaves
+    // NOUVEAU : Retirer une offre
+    Route::delete('/demandes_epaves/{demandeEpave}/offre/{offre}', [DemandeEpaveController::class, 'retirerOffre'])
+        ->name('demandes-epaves.retirer-offre');
+
+    // Demandes d'épaves - accessible à tous
     Route::resource('demandes-epaves', DemandeEpaveController::class)
         ->parameters(['demandes-epaves' => 'demandeEpave'])
         ->names('demandes-epaves');

@@ -7,14 +7,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OffreEpave extends Model
 {
-    protected $table = 'offres_epaves'; // <-- IMPORTANT
+    protected $table = 'offres_epaves';
 
     protected $fillable = [
         'demande_epave_id',
-        'casse_id',
+        'user_id',  // Changé de casse_id à user_id
         'prix_offert',
         'message',
         'statut'
+    ];
+
+    protected $casts = [
+        'prix_offert' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function demandeEpave(): BelongsTo
@@ -22,9 +28,16 @@ class OffreEpave extends Model
         return $this->belongsTo(DemandeEpave::class);
     }
 
+    // Relation générique pour tous les utilisateurs (clients et casses)
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Garde la relation casse pour la compatibilité (alias de user)
     public function casse(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'casse_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function getStatutBadgeClassAttribute()
@@ -39,6 +52,6 @@ class OffreEpave extends Model
 
     public function getFormattedPrixAttribute()
     {
-        return number_format($this->prix_offert, 0, ',', ' ') . '€';
+        return number_format($this->prix_offert, 0, ',', ' ') . ' €';
     }
 }

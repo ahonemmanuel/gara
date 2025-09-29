@@ -196,4 +196,10 @@ class User extends Authenticatable
     }
 
 
+    public function demandes_epaves()
+    {
+        return $this->hasMany(DemandeEpave::class);
+    }
+
+
 }

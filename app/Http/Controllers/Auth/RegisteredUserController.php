@@ -42,7 +42,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect($this->redirectTo());
+        return redirect()->intended(route('dashboard'));
     }
 
     protected function redirectTo(): string

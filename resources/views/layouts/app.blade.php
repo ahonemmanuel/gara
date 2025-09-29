@@ -77,12 +77,19 @@
                                 <i class="fas fa-boxes me-2"></i> Gestion des stocks
                             </a>
                         </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link {{ Request::is('demandes-epaves*') ? 'active' : '' }}" href="{{ route('demandes-epaves.index') }}">
-                                    <i class="fas fa-search-dollar me-2"></i> Demandes d'épaves
-                                </a>
-                            </li>
+                        <!-- NOUVEAU : Mes épaves à vendre -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ Request::is('demandes-epaves/create') || (Request::is('demandes-epaves/*') && auth()->user()->demandes_epaves->contains('id', request()->route('demandeEpave'))) ? 'active' : '' }}"
+                               href="{{ route('demandes-epaves.create') }}">
+                                <i class="fas fa-car-crash me-2"></i> Vendre une épave
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ Request::is('demandes-epaves') && !Request::is('demandes-epaves/create') ? 'active' : '' }}"
+                               href="{{ route('demandes-epaves.index') }}">
+                                <i class="fas fa-search-dollar me-2"></i> Acheter des épaves
+                            </a>
+                        </li>
 
                     @elseif(auth()->user()->role->value === 'client')
                         <!-- Menu Client uniquement -->
@@ -114,6 +121,8 @@
                                 <i class="fas fa-car-crash me-2"></i> Vendre mon épave
                             </a>
                         </li>
+
+
 
 
                     @elseif(auth()->user()->role->value === 'admin')

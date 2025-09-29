@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/DemandeEpaveController.php
 namespace App\Http\Controllers;
 
 use App\Models\DemandeEpave;
@@ -25,26 +24,32 @@ class DemandeEpaveController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isCasse()) {
-            // Voir toutes les demandes disponibles
-            $query = DemandeEpave::with(['user', 'offres'])
-                ->where('statut', 'en_attente');
+        // Récupérer MES demandes (celles que j'ai créées)
+        $mesDemandes = $user->demandesEpaves()
+            ->with(['offres.user'])
+            ->latest()
+            ->paginate(10, ['*'], 'mes_demandes');
 
-            if ($request->filled('marque')) {
-                $query->where('marque', $request->marque);
-            }
+        // Récupérer les AUTRES demandes (disponibles à l'achat)
+        $queryAutres = DemandeEpave::with(['user', 'offres'])
+            ->where('user_id', '!=', $user->id)
+            ->where('statut', 'en_attente');
 
-            if ($request->filled('prix_max')) {
-                $query->where('prix_souhaite', '<=', $request->prix_max);
-            }
-
-            $demandes = $query->latest()->paginate(10);
-        } else {
-            // Voir ses propres demandes
-            $demandes = $user->demandesEpaves()->with('offres.casse')->latest()->paginate(10);
+        // Appliquer les filtres
+        if ($request->filled('marque')) {
+            $queryAutres->where('marque', 'like', '%' . $request->marque . '%');
         }
 
-        return view('demandes-epaves.index', compact('demandes'));
+        if ($request->filled('prix_max')) {
+            $queryAutres->where(function($q) use ($request) {
+                $q->where('prix_souhaite', '<=', $request->prix_max)
+                    ->orWhereNull('prix_souhaite');
+            });
+        }
+
+        $autresDemandes = $queryAutres->latest()->paginate(10, ['*'], 'autres_demandes');
+
+        return view('demandes-epaves.index', compact('mesDemandes', 'autresDemandes'));
     }
 
     public function create()
@@ -85,13 +90,13 @@ class DemandeEpaveController extends Controller
 
         $demande = DemandeEpave::create($validated);
 
-        // Notifier les casses dans la région
-        $casses = User::where('role', 'casse')
+        // Notifier tous les utilisateurs actifs (clients ET casses)
+        $utilisateursActifs = User::where('id', '!=', Auth::id())
             ->where('actif', true)
             ->get();
 
-        foreach ($casses as $casse) {
-            $this->notificationService->nouvelleDemande($casse, $demande);
+        foreach ($utilisateursActifs as $utilisateur) {
+            $this->notificationService->nouvelleDemande($utilisateur, $demande);
         }
 
         return redirect()->route('demandes-epaves.show', $demande)
@@ -100,32 +105,44 @@ class DemandeEpaveController extends Controller
 
     public function show(DemandeEpave $demandeEpave)
     {
-        $demandeEpave->load(['user', 'offres.casse']);
+        $demandeEpave->load(['user', 'offres.user']);
 
-        $peutFaireOffre = Auth::user()->isCasse() &&
+        // Peut faire offre si :
+        // - Ce n'est pas sa propre demande
+        // - La demande est en attente
+        // - N'a pas déjà fait d'offre
+        $peutFaireOffre = Auth::id() !== $demandeEpave->user_id &&
             $demandeEpave->statut === 'en_attente' &&
-            !$demandeEpave->offres()->where('casse_id', Auth::id())->exists();
+            !$demandeEpave->offres()->where('user_id', Auth::id())->exists();
 
         return view('demandes-epaves.show', compact('demandeEpave', 'peutFaireOffre'));
     }
 
     public function faireOffre(Request $request, DemandeEpave $demandeEpave)
     {
-        $this->authorize('faireOffre', $demandeEpave);
+        // Vérifier que ce n'est pas sa propre demande
+        if ($demandeEpave->user_id === Auth::id()) {
+            return back()->with('error', 'Vous ne pouvez pas faire d\'offre sur votre propre demande.');
+        }
+
+        // Vérifier que la demande est en attente
+        if ($demandeEpave->statut !== 'en_attente') {
+            return back()->with('error', 'Cette demande n\'est plus disponible.');
+        }
 
         $request->validate([
-            'prix_offert' => 'required|numeric|min:0',
-            'message' => 'nullable|string'
+            'prix_offert' => 'required|numeric|min:1',
+            'message' => 'nullable|string|max:1000'
         ]);
 
         // Vérifier qu'aucune offre n'existe déjà
-        if ($demandeEpave->offres()->where('casse_id', Auth::id())->exists()) {
+        if ($demandeEpave->offres()->where('user_id', Auth::id())->exists()) {
             return back()->with('error', 'Vous avez déjà fait une offre pour cette demande.');
         }
 
         $offre = OffreEpave::create([
             'demande_epave_id' => $demandeEpave->id,
-            'casse_id' => Auth::id(),
+            'user_id' => Auth::id(),
             'prix_offert' => $request->prix_offert,
             'message' => $request->message,
             'statut' => 'en_attente'
@@ -137,9 +154,44 @@ class DemandeEpaveController extends Controller
         return back()->with('success', 'Offre envoyée avec succès.');
     }
 
+    public function retirerOffre(DemandeEpave $demandeEpave, OffreEpave $offre)
+    {
+        // Vérifier que c'est bien son offre
+        if ($offre->user_id !== Auth::id()) {
+            return back()->with('error', 'Vous ne pouvez pas retirer cette offre.');
+        }
+
+        // Vérifier que l'offre n'a pas déjà été acceptée
+        if ($offre->statut === 'accepte') {
+            return back()->with('error', 'Cette offre a déjà été acceptée et ne peut plus être retirée.');
+        }
+
+        // Vérifier que l'offre appartient bien à cette demande
+        if ($offre->demande_epave_id !== $demandeEpave->id) {
+            return back()->with('error', 'Offre invalide.');
+        }
+
+        $offre->delete();
+
+        return back()->with('success', 'Votre offre a été retirée avec succès.');
+    }
+
     public function accepterOffre(DemandeEpave $demandeEpave, OffreEpave $offre)
     {
-        $this->authorize('accepterOffre', $demandeEpave);
+        // Vérifier que c'est bien le propriétaire de la demande
+        if ($demandeEpave->user_id !== Auth::id()) {
+            return back()->with('error', 'Vous n\'êtes pas autorisé à accepter cette offre.');
+        }
+
+        // Vérifier que l'offre appartient à cette demande
+        if ($offre->demande_epave_id !== $demandeEpave->id) {
+            return back()->with('error', 'Offre invalide.');
+        }
+
+        // Vérifier que la demande est encore en attente
+        if ($demandeEpave->statut !== 'en_attente') {
+            return back()->with('error', 'Cette demande n\'est plus disponible.');
+        }
 
         DB::transaction(function() use ($offre, $demandeEpave) {
             // Accepter l'offre
@@ -149,20 +201,47 @@ class DemandeEpaveController extends Controller
             $demandeEpave->offres()
                 ->where('id', '!=', $offre->id)
                 ->update(['statut' => 'refuse']);
+
+            // Mettre à jour le statut de la demande
+            $demandeEpave->update(['statut' => 'vendu']);
         });
 
-        return back()->with('success', 'Offre acceptée avec succès.');
+        // Notifier l'acheteur que son offre a été acceptée
+        $this->notificationService->offreAcceptee($offre->user, $offre);
+
+        // Notifier les autres personnes que leurs offres ont été refusées
+        $autresOffres = $demandeEpave->offres()
+            ->where('id', '!=', $offre->id)
+            ->where('statut', 'refuse')
+            ->get();
+
+        foreach ($autresOffres as $autreOffre) {
+            $this->notificationService->offreRefusee($autreOffre->user, $autreOffre);
+        }
+
+        return back()->with('success', 'Offre acceptée avec succès. La transaction est maintenant finalisée.');
     }
 
+    // MODIFIÉ : Accessible à tous pour modifier leur propre demande
     public function edit(DemandeEpave $demandeEpave)
     {
-        $this->authorize('update', $demandeEpave);
+        // Vérifier que c'est bien le propriétaire
+        if ($demandeEpave->user_id !== Auth::id()) {
+            abort(403, 'Vous ne pouvez pas modifier cette demande car vous n\'en êtes pas le propriétaire.');
+        }
+
+        // Permet la modification même si le statut n'est pas "en_attente"
+        // Mais on peut ajouter des restrictions si nécessaire
         return view('demandes-epaves.edit', compact('demandeEpave'));
     }
 
+    // MODIFIÉ : Accessible à tous pour modifier leur propre demande
     public function update(Request $request, DemandeEpave $demandeEpave)
     {
-        $this->authorize('update', $demandeEpave);
+        // Vérifier que c'est bien le propriétaire
+        if ($demandeEpave->user_id !== Auth::id()) {
+            abort(403, 'Vous ne pouvez pas modifier cette demande car vous n\'en êtes pas le propriétaire.');
+        }
 
         $validated = $request->validate([
             'marque' => 'required|string|max:255',
@@ -202,7 +281,15 @@ class DemandeEpaveController extends Controller
 
     public function destroy(DemandeEpave $demandeEpave)
     {
-        $this->authorize('delete', $demandeEpave);
+        // Vérifier que c'est bien le propriétaire
+        if ($demandeEpave->user_id !== Auth::id()) {
+            abort(403, 'Vous ne pouvez pas supprimer cette demande car vous n\'en êtes pas le propriétaire.');
+        }
+
+        // Ne peut supprimer que si en attente
+        if ($demandeEpave->statut !== 'en_attente') {
+            return back()->with('error', 'Vous ne pouvez supprimer cette demande que si elle est en attente.');
+        }
 
         // Supprimer les photos
         if ($demandeEpave->photos) {
@@ -210,6 +297,9 @@ class DemandeEpaveController extends Controller
                 Storage::disk('public')->delete($photo);
             }
         }
+
+        // Supprimer les offres associées
+        $demandeEpave->offres()->delete();
 
         $demandeEpave->delete();
 
