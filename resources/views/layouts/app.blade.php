@@ -56,6 +56,16 @@
 
                 @auth
                     {{-- Menu Casse --}}
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('demandes-epaves*') ? 'active' : '' }}" href="{{ route('demandes-epaves.index') }}">
+                            <i class="fas fa-car-crash me-2"></i> Gestion épave et vehicule
+                        </a>
+                    </li>
+
+
+
+
                     @if(auth()->user()->role->value === 'casse')
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('pieces*') ? 'active' : '' }}" href="{{ route('pieces.index') }}">
@@ -127,6 +137,16 @@
                     @endif
                     <!-- Menu commun -->
                     <hr class="bg-light my-3">
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ Request::is('notifications*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
+                            <i class="fas fa-bell me-2"></i> Notifications
+                            @if(($notificationsNonLues ?? 0) > 0)
+                                <span class="badge bg-danger ms-2">{{ $notificationsNonLues }}</span>
+                            @endif
+                        </a>
+                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link {{ Request::is('profile*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
                             <i class="fas fa-user me-2"></i> Mon profil

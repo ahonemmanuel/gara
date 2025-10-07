@@ -177,17 +177,33 @@ class CommandeController extends Controller
             return back()->with('error', 'Cette commande ne peut plus être annulée.');
         }
 
+        // Vérifier que toutes les pièces de la commande existent encore
+        $commande->load('items.piece');
+        $piecesSupprimees = $commande->items->filter(function($item) {
+            return is_null($item->piece);
+        });
+
+        if ($piecesSupprimees->isNotEmpty()) {
+            return back()->with('error',
+                'Impossible d\'annuler cette commande car certaines pièces ne sont plus disponibles dans le catalogue. ' .
+                'Veuillez contacter le service client pour obtenir de l\'aide.'
+            );
+        }
+
         DB::transaction(function() use ($commande) {
             foreach ($commande->items as $item) {
-                $item->piece->increment('quantite', $item->quantite);
-                $item->piece->update(['disponible' => true]);
+                // Vérifier à nouveau que la pièce existe avant de mettre à jour le stock
+                if ($item->piece) {
+                    $item->piece->increment('quantite', $item->quantite);
+                    $item->piece->update(['disponible' => true]);
+                }
             }
 
             $commande->update(['statut' => 'annulee']);
 
             $casses = $commande->items->map(function($item) {
-                return $item->piece->user;
-            })->unique();
+                return $item->piece ? $item->piece->user : null;
+            })->filter()->unique();
 
             foreach ($casses as $casse) {
                 $this->notificationService->commandeAnnulee($casse, $commande);
@@ -197,7 +213,7 @@ class CommandeController extends Controller
         return back()->with('success', 'Commande annulée avec succès.');
     }
 
-    // Mise à jour de l’adresse / géolocalisation
+    // Mise à jour de l'adresse / géolocalisation
     public function updateAdresse(Request $request, Commande $commande)
     {
         $this->authorize('update', $commande);

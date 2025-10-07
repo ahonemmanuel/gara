@@ -747,4 +747,15 @@ class User extends Authenticatable
             \Log::info("Suppression de l'utilisateur: {$user->name} (ID: {$user->id})");
         });
     }
+
+
+    // À ajouter dans app/Models/User.php
+
+    /**
+     * Obtenir le nombre de notifications non lues
+     */
+    public function getNombreNotificationsNonLues(): int
+    {
+        return $this->notifications()->where('lu', false)->count();
+    }
 }

@@ -82,20 +82,54 @@
                                                 @endif
 
                                                 @if(auth()->user()->isClient() && in_array($commande->statut, ['en_attente','confirmee']))
-                                                    <form action="{{ route('commandes.annuler', $commande) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Annuler cette commande ?')">
-                                                            <i class="fas fa-times"></i> Annuler
+                                                    @php
+                                                        $piecesSupprimees = $commande->items->filter(function($item) {
+                                                            return is_null($item->piece);
+                                                        });
+                                                        $peutAnnuler = $piecesSupprimees->isEmpty();
+                                                    @endphp
+
+                                                    @if($peutAnnuler)
+                                                        <form action="{{ route('commandes.annuler', $commande) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Annuler cette commande ?')">
+                                                                <i class="fas fa-times"></i> Annuler
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                                data-bs-toggle="tooltip"
+                                                                title="Impossible d'annuler : certaines pièces de cette commande ne sont plus disponibles">
+                                                            <i class="fas fa-exclamation-triangle"></i> Non annulable
                                                         </button>
-                                                    </form>
+                                                    @endif
                                                 @endif
                                             </div>
                                         @endif
                                     </td>
-
-
                                 </tr>
+
+                                <!-- Affichage d'un message si des pièces ont été supprimées -->
+                                @if(auth()->user()->isClient() && in_array($commande->statut, ['en_attente','confirmee']))
+                                    @php
+                                        $piecesSupprimees = $commande->items->filter(function($item) {
+                                            return is_null($item->piece);
+                                        });
+                                    @endphp
+
+                                    @if($piecesSupprimees->isNotEmpty())
+                                        <tr>
+                                            <td colspan="6" class="bg-warning bg-opacity-10">
+                                                <div class="alert alert-warning mb-0 py-2">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    <strong>Attention :</strong> Cette commande contient {{ $piecesSupprimees->count() }} pièce(s) qui ne sont plus disponibles dans le catalogue.
+                                                    L'annulation n'est plus possible. Veuillez contacter le service client pour plus d'informations.
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endif
 
                                 <!-- Modal pour modification du statut (uniquement pour casse) -->
                                 @if(auth()->user()->isCasse())
@@ -156,4 +190,14 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            // Initialiser les tooltips Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        </script>
+    @endpush
 @endsection

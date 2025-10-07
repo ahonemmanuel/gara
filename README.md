@@ -8,8 +8,10 @@ php artisan make:migration ensure_ville_in_pieces_table
 php artisan migrate
 
 # 3. Créer et exécuter le seeder
-php artisan make:seeder MarqueModeleSeeder
+
 php artisan db:seed --class=MarqueModeleSeeder
+
+php artisan db:seed --class=DatabaseSeeder
 
 # 4. Synchroniser les villes existantes
 php artisan pieces:sync-ville

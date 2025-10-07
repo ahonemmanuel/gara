@@ -96,10 +96,10 @@ class NotificationService
         ]);
     }
 
-    public function nouvelleDemande(User $casse, DemandeEpave $demande)
+    public function nouvelleDemande(User $utilisateur, DemandeEpave $demande)
     {
         return Notification::create([
-            'user_id' => $casse->id,
+            'user_id' => $utilisateur->id,
             'type' => 'general',
             'titre' => 'Nouvelle demande d\'épave',
             'message' => "Une nouvelle demande de vente d'épave ({$demande->marque} {$demande->modele}) a été publiée.",
@@ -113,30 +113,63 @@ class NotificationService
 
     public function nouvelleOffre(User $proprietaire, OffreEpave $offre)
     {
+        // Charger la relation si elle n'est pas déjà chargée
+        $offre->load('demandeEpave', 'user');
+
         return Notification::create([
             'user_id' => $proprietaire->id,
             'type' => 'general',
             'titre' => 'Nouvelle offre reçue',
-            'message' => "Vous avez reçu une offre de {$offre->prix_offert}FCFA pour votre {$offre->demandeEpave->marque} {$offre->demandeEpave->modele}.",
+            'message' => "Vous avez reçu une offre de " . number_format($offre->prix_offert, 0, ',', ' ') . " FCFA pour votre {$offre->demandeEpave->marque} {$offre->demandeEpave->modele}.",
             'data' => [
                 'offre_id' => $offre->id,
+                'demande_id' => $offre->demande_epave_id,
                 'prix_offert' => $offre->prix_offert,
-                'casse_nom' => $offre->casse->nom_entreprise
+                'acheteur_nom' => $offre->user->name
             ]
         ]);
     }
 
-    public function offreAcceptee(User $casse, OffreEpave $offre)
+    public function offreAcceptee(User $acheteur, OffreEpave $offre)
     {
+        // Charger la relation si elle n'est pas déjà chargée
+        $offre->load('demandeEpave');
+
         return Notification::create([
-            'user_id' => $casse->id,
+            'user_id' => $acheteur->id,
             'type' => 'general',
             'titre' => 'Offre acceptée',
-            'message' => "Votre offre de {$offre->prix_offert}FCFA pour le {$offre->demandeEpave->marque} {$offre->demandeEpave->modele} a été acceptée.",
+            'message' => "Votre offre de " . number_format($offre->prix_offert, 0, ',', ' ') . " FCFA pour le {$offre->demandeEpave->marque} {$offre->demandeEpave->modele} a été acceptée.",
             'data' => [
                 'offre_id' => $offre->id,
+                'demande_id' => $offre->demande_epave_id,
                 'prix_offert' => $offre->prix_offert,
-                'telephone_contact' => $offre->demandeEpave->telephone_contact
+                'telephone_contact' => $offre->demandeEpave->telephone_contact,
+                'adresse' => $offre->demandeEpave->adresse
+            ]
+        ]);
+    }
+
+    /**
+     * NOUVELLE MÉTHODE : Notifier qu'une offre a été refusée
+     */
+    public function offreRefusee(User $acheteur, OffreEpave $offre)
+    {
+        // Charger la relation si elle n'est pas déjà chargée
+        $offre->load('demandeEpave');
+
+        return Notification::create([
+            'user_id' => $acheteur->id,
+            'type' => 'general',
+            'titre' => 'Offre refusée',
+            'message' => "Votre offre de " . number_format($offre->prix_offert, 0, ',', ' ') . " FCFA pour le {$offre->demandeEpave->marque} {$offre->demandeEpave->modele} a été refusée par le vendeur.",
+            'data' => [
+                'offre_id' => $offre->id,
+                'demande_id' => $offre->demande_epave_id,
+                'prix_offert' => $offre->prix_offert,
+                'marque' => $offre->demandeEpave->marque,
+                'modele' => $offre->demandeEpave->modele,
+                'statut' => 'refuse'
             ]
         ]);
     }
@@ -150,16 +183,3 @@ class NotificationService
         return $user->notifications()->update(['lu' => true]);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

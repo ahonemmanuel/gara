@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Auth; // Namespace correct
 
 use App\Enums\UserRole;
+use App\Mail\CasseApprovedMail;
+use App\Mail\CasseRejectedMail;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class AdminController extends Controller
 {
@@ -110,8 +113,8 @@ class AdminController extends Controller
             'approved_at' => now(),
         ]);
 
-        // TODO: Envoyer un email de notification à la casse
-         Mail::to($casse->email)->send(new CasseApprovedMail($casse));
+        // Envoyer un email de notification à la casse
+        Mail::to($casse->email)->send(new CasseApprovedMail($casse));
 
         return back()->with('success', "La casse {$casse->name} a été approuvée avec succès.");
     }
@@ -127,8 +130,8 @@ class AdminController extends Controller
             return back()->with('error', 'Cet utilisateur n\'est pas une casse.');
         }
 
-        // TODO: Envoyer un email de notification de rejet
-        // Mail::to($casse->email)->send(new CasseRejectedMail($casse));
+        // Envoyer un email de notification de rejet avant la suppression
+        Mail::to($casse->email)->send(new CasseRejectedMail($casse));
 
         // Supprimer le compte
         $casse->delete();

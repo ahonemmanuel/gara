@@ -11,7 +11,6 @@ return new class extends Migration
     {
         Schema::table('pieces', function (Blueprint $table) {
             // Supprimer les anciennes colonnes
-            $table->dropColumn(['marque_piece', 'modele_piece', 'ville']);
 
             // Ajouter les nouvelles relations
             $table->foreignId('marque_id')->nullable()->after('id')->constrained()->nullOnDelete();

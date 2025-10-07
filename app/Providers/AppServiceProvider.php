@@ -6,6 +6,7 @@ use App\Models\Commande;
 use App\Models\Notification;
 use App\Models\Piece;
 use App\Models\Vehicule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -16,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      * Register any application services.
      */
 
-    
+
     public function register(): void
     {
         //
@@ -33,6 +34,17 @@ class AppServiceProvider extends ServiceProvider
 
         Schema::defaultStringLength(191);
 
+
+        // Partager le nombre de notifications non lues avec toutes les vues
+        View::composer('*', function ($view) {
+            if (Auth::check()) {
+                $notificationsNonLues = Auth::user()->notifications()
+                    ->where('lu', false)
+                    ->count();
+
+                $view->with('notificationsNonLues', $notificationsNonLues);
+            }
+        });
 
 
 

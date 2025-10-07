@@ -1,6 +1,5 @@
 <?php
 
-// app/Models/DemandeEpave.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -9,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DemandeEpave extends Model
 {
-    protected $table = 'demandes_epaves'; // <-- IMPORTANT
+    protected $table = 'demandes_epaves';
 
     protected $fillable = [
         'user_id',
+        'type', // Nouveau champ
         'marque',
         'modele',
         'annee',
@@ -61,7 +61,26 @@ class DemandeEpave extends Model
             'interesse' => 'bg-info',
             'accepte' => 'bg-success',
             'refuse' => 'bg-danger',
+            'vendu' => 'bg-success',
             default => 'bg-secondary'
+        };
+    }
+
+    public function getTypeBadgeClassAttribute()
+    {
+        return match($this->type) {
+            'vehicule' => 'bg-primary',
+            'epave' => 'bg-danger',
+            default => 'bg-secondary'
+        };
+    }
+
+    public function getTypeLibelleAttribute()
+    {
+        return match($this->type) {
+            'vehicule' => 'Véhicule',
+            'epave' => 'Épave',
+            default => 'Non défini'
         };
     }
 
@@ -75,4 +94,3 @@ class DemandeEpave extends Model
         return $this->offres()->where('user_id', $casseId)->exists();
     }
 }
-

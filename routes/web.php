@@ -23,7 +23,7 @@ use App\Models\Commande;
 |--------------------------------------------------------------------------
 */
 
-// Page d’accueil publique
+// Page d'accueil publique
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
@@ -39,6 +39,10 @@ require __DIR__ . '/auth.php';
 // Routes protégées
 // ----------------------
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+
+    // NOUVELLE ROUTE : Refuser une offre
+    Route::post('/demandes-epaves/{demandeEpave}/refuser-offre/{offre}', [DemandeEpaveController::class, 'refuserOffre'])
+        ->name('demandes-epaves.refuser-offre');
 
     // Dashboard général
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -62,7 +66,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Pièces détachées
     Route::resource('pieces', PieceController::class);
 
-    // Demandes d’épaves
+    // Demandes d'épaves
     Route::resource('demandes-epaves', DemandeEpaveController::class)
         ->parameters(['demandes-epaves' => 'demandeEpave'])
         ->names('demandes-epaves');
@@ -149,8 +153,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // ----------------------
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-
-
         // Dashboard
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
@@ -164,18 +166,44 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Paramètres
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
 
-
-
-        // Gestion des casses en attente 👈 NOUVEAU
+        // Gestion des casses en attente
         Route::get('/casses/pending', [AdminController::class, 'pendingCasses'])->name('casses.pending');
         Route::post('/casses/{id}/approve', [AdminController::class, 'approveCasse'])->name('casses.approve');
         Route::post('/casses/{id}/reject', [AdminController::class, 'rejectCasse'])->name('casses.reject');
-
-
-
-
     });
 });
+
+// ----------------------
+// API Routes pour autocomplétion
+// ----------------------
+Route::middleware('auth')->group(function() {
+    // Modèles par marque
+    Route::get('/api/marques/{marque}/modeles', [PieceController::class, 'getModeles']);
+
+    // Autocomplétion noms de pièces
+    Route::get('/api/pieces/autocomplete-noms', [PieceController::class, 'autocompleteNomPieces']);
+
+    // Autocomplétion marques
+    Route::get('/api/marques/autocomplete', [PieceController::class, 'autocompleteMarques']);
+});
+
+// À ajouter dans la section API Routes de web.php
+
+Route::middleware('auth')->group(function() {
+    // Modèles par marque (existant)
+    Route::get('/api/marques/{marque}/modeles', [PieceController::class, 'getModeles']);
+
+    // NOUVEAU: Modèles par marque pour les demandes d'épaves
+    Route::get('/api/marques/{marque}/modeles-epave', [DemandeEpaveController::class, 'getModelesByMarque']);
+
+    // Autocomplétion noms de pièces (existant)
+    Route::get('/api/pieces/autocomplete-noms', [PieceController::class, 'autocompleteNomPieces']);
+
+    // Autocomplétion marques (existant)
+    Route::get('/api/marques/autocomplete', [PieceController::class, 'autocompleteMarques']);
+});
+
+
 
 // ----------------------
 // Route publique Commandes Casse (éviter conflit noms)
@@ -188,15 +216,6 @@ Route::get('/commandes-casse', function () {
     return view('casse.commandes.index', compact('commandes'));
 })->name('gestion.commandes.index');
 
-
-Route::middleware('auth')->group(function() {
-    Route::get('/api/marques/{marque}/modeles', [PieceController::class, 'getModeles']);
-});
-
-
 Route::get('/auth/pending-approval', function() {
     return view('auth.pending-approval');
 })->name('auth.pending-approval');
-
-
-

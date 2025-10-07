@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
-@section('title', 'Demandes d\'épaves')
+@section('title', 'Demandes de véhicules et épaves')
 
 @section('content')
     <div class="container-fluid">
-        <!-- Tabs pour séparer mes demandes et les demandes disponibles -->
+        <!-- Tabs -->
         <ul class="nav nav-tabs mb-4" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-tab {{ request('tab') !== 'disponibles' ? 'active' : '' }}"
                         data-bs-toggle="tab" data-bs-target="#mes-demandes" type="button">
-                    <i class="fas fa-list me-2"></i> Mes demandes d'épaves
+                    <i class="fas fa-list me-2"></i> Mes annonces
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-tab {{ request('tab') === 'disponibles' ? 'active' : '' }}"
                         data-bs-toggle="tab" data-bs-target="#demandes-disponibles" type="button">
-                    <i class="fas fa-search-dollar me-2"></i> Épaves disponibles
+                    <i class="fas fa-search-dollar me-2"></i> Annonces disponibles
                 </button>
             </li>
         </ul>
@@ -25,9 +25,9 @@
             <div class="tab-pane fade {{ request('tab') !== 'disponibles' ? 'show active' : '' }}"
                  id="mes-demandes">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Mes demandes d'épaves</h1>
+                    <h1>Mes annonces</h1>
                     <a href="{{ route('demandes-epaves.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Nouvelle demande
+                        <i class="fas fa-plus"></i> Nouvelle annonce
                     </a>
                 </div>
 
@@ -38,6 +38,7 @@
                                 <table class="table table-hover">
                                     <thead>
                                     <tr>
+                                        <th>Type</th>
                                         <th>Véhicule</th>
                                         <th>Prix souhaité</th>
                                         <th>État</th>
@@ -49,6 +50,16 @@
                                     <tbody>
                                     @foreach($mesDemandes as $demande)
                                         <tr>
+                                            <td>
+                                                <span class="badge {{ $demande->type_badge_class }}">
+                                                    @if($demande->type === 'vehicule')
+                                                        <i class="fas fa-car"></i>
+                                                    @else
+                                                        <i class="fas fa-car-crash"></i>
+                                                    @endif
+                                                    {{ $demande->type_libelle }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <strong>{{ $demande->marque }} {{ $demande->modele }}</strong><br>
                                                 <small class="text-muted">
@@ -91,10 +102,10 @@
                         @else
                             <div class="text-center py-5">
                                 <i class="fas fa-car-crash fa-4x text-muted mb-3"></i>
-                                <h4>Aucune demande d'épave</h4>
-                                <p class="text-muted">Vous n'avez pas encore créé de demande de vente d'épave</p>
+                                <h4>Aucune annonce</h4>
+                                <p class="text-muted">Vous n'avez pas encore créé d'annonce de vente</p>
                                 <a href="{{ route('demandes-epaves.create') }}" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Créer une demande
+                                    <i class="fas fa-plus"></i> Créer une annonce
                                 </a>
                             </div>
                         @endif
@@ -106,7 +117,7 @@
             <div class="tab-pane fade {{ request('tab') === 'disponibles' ? 'show active' : '' }}"
                  id="demandes-disponibles">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1>Épaves disponibles à l'achat</h1>
+                    <h1>Véhicules et épaves disponibles</h1>
                 </div>
 
                 <!-- Filtres -->
@@ -114,17 +125,38 @@
                     <div class="card-body">
                         <form method="GET" class="row g-3">
                             <input type="hidden" name="tab" value="disponibles">
+
+                            <div class="col-md-2">
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="">Tous</option>
+                                    <option value="vehicule" {{ request('type') === 'vehicule' ? 'selected' : '' }}>Véhicules</option>
+                                    <option value="epave" {{ request('type') === 'epave' ? 'selected' : '' }}>Épaves</option>
+                                </select>
+                            </div>
+
                             <div class="col-md-3">
+                                <label class="form-label">Marque</label>
                                 <input type="text" name="marque" class="form-control" placeholder="Marque..." value="{{ request('marque') }}">
                             </div>
+
                             <div class="col-md-3">
+                                <label class="form-label">Prix maximum</label>
                                 <input type="number" name="prix_max" class="form-control" placeholder="Prix max..." value="{{ request('prix_max') }}">
                             </div>
+
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
                             </div>
+
                             <div class="col-md-2">
-                                <a href="{{ route('demandes-epaves.index', ['tab' => 'disponibles']) }}" class="btn btn-secondary w-100">Réinitialiser</a>
+                                <label class="form-label">&nbsp;</label>
+                                <a href="{{ route('demandes-epaves.index', ['tab' => 'disponibles']) }}" class="btn btn-secondary w-100">
+                                    <i class="fas fa-redo"></i> Réinitialiser
+                                </a>
                             </div>
                         </form>
                     </div>
@@ -137,6 +169,7 @@
                                 <table class="table table-hover">
                                     <thead>
                                     <tr>
+                                        <th>Type</th>
                                         <th>Véhicule</th>
                                         <th>Vendeur</th>
                                         <th>Prix souhaité</th>
@@ -149,6 +182,16 @@
                                     <tbody>
                                     @foreach($autresDemandes as $demande)
                                         <tr>
+                                            <td>
+                                                <span class="badge {{ $demande->type_badge_class }}">
+                                                    @if($demande->type === 'vehicule')
+                                                        <i class="fas fa-car"></i>
+                                                    @else
+                                                        <i class="fas fa-car-crash"></i>
+                                                    @endif
+                                                    {{ $demande->type_libelle }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <strong>{{ $demande->marque }} {{ $demande->modele }}</strong><br>
                                                 <small class="text-muted">
@@ -212,8 +255,8 @@
                         @else
                             <div class="text-center py-5">
                                 <i class="fas fa-search fa-4x text-muted mb-3"></i>
-                                <h4>Aucune épave disponible</h4>
-                                <p class="text-muted">Aucune épave n'est actuellement disponible à l'achat</p>
+                                <h4>Aucune annonce disponible</h4>
+                                <p class="text-muted">Aucun véhicule ou épave n'est actuellement disponible</p>
                             </div>
                         @endif
                     </div>

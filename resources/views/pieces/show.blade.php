@@ -56,25 +56,25 @@
                                 <div class="d-flex gap-2 flex-wrap">
                                     @if($piece->marque)
                                         <span class="badge bg-primary">
-                                        <i class="fas fa-tag"></i> {{ $piece->marque->nom }}
-                                    </span>
+                                            <i class="fas fa-tag"></i> {{ $piece->marque->nom }}
+                                        </span>
                                     @endif
                                     @if($piece->modele)
                                         <span class="badge bg-secondary">
-                                        <i class="fas fa-car"></i> {{ $piece->modele->nom }}
-                                    </span>
+                                            <i class="fas fa-car"></i> {{ $piece->modele->nom }}
+                                        </span>
                                     @endif
                                     <span class="badge bg-info">
-                                    {{ ucfirst(str_replace('_', ' ', $piece->etat)) }}
-                                </span>
+                                        {{ ucfirst(str_replace('_', ' ', $piece->etat)) }}
+                                    </span>
                                     @if($piece->disponible)
                                         <span class="badge bg-success">
-                                        <i class="fas fa-check-circle"></i> Disponible
-                                    </span>
+                                            <i class="fas fa-check-circle"></i> Disponible
+                                        </span>
                                     @else
                                         <span class="badge bg-danger">
-                                        <i class="fas fa-times-circle"></i> Indisponible
-                                    </span>
+                                            <i class="fas fa-times-circle"></i> Indisponible
+                                        </span>
                                     @endif
                                 </div>
                             </div>
@@ -176,25 +176,32 @@
                 <div class="card shadow mb-4">
                     <div class="card-body">
                         <h5 class="mb-3">Vendeur</h5>
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
-                                 style="width: 50px; height: 50px;">
-                                <i class="fas fa-user fa-lg"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0">{{ $piece->user->name }}</h6>
-                                <small class="text-muted">
-                                    @if($piece->ville)
-                                        <i class="fas fa-map-marker-alt"></i> {{ $piece->ville }}
-                                    @endif
-                                </small>
-                            </div>
-                        </div>
 
-                        @if($piece->user->email)
-                            <a href="mailto:{{ $piece->user->email }}" class="btn btn-outline-primary w-100 mb-2">
-                                <i class="fas fa-envelope"></i> Contacter
-                            </a>
+                        @if($piece->user)
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ $piece->user->name }}</h6>
+                                    <small class="text-muted">
+                                        @if($piece->ville)
+                                            <i class="fas fa-map-marker-alt"></i> {{ $piece->ville }}
+                                        @endif
+                                    </small>
+                                </div>
+                            </div>
+
+                            @if($piece->user->email)
+                                <a href="mailto:{{ $piece->user->email }}" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="fas fa-envelope"></i> Contacter
+                                </a>
+                            @endif
+                        @else
+                            <div class="alert alert-warning text-center mb-0">
+                                <i class="fas fa-user-slash"></i> Ce vendeur a été supprimé.
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -209,7 +216,7 @@
                             <p class="mb-0">
                                 <strong>{{ $piece->ville }}</strong>
                             </p>
-                            @if($piece->user->latitude && $piece->user->longitude)
+                            @if($piece->user?->latitude && $piece->user?->longitude)
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle"></i> Position GPS disponible
                                 </small>
@@ -344,9 +351,9 @@
                 alertDiv.style.zIndex = '9999';
                 alertDiv.style.minWidth = '300px';
                 alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
                 document.body.appendChild(alertDiv);
 
                 setTimeout(() => {
