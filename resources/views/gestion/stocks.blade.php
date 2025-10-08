@@ -161,9 +161,7 @@
             </div>
         @endif
     </div>
-@endsection
 
-@section('styles')
     <style>
         .card {
             transition: all 0.3s ease;
