@@ -57,6 +57,7 @@
                 @auth
                     {{-- Menu Casse --}}
 
+                @if(auth()->user()->role->value == 'admin' || auth()->user()->role->value == 'casse') @endif
                     <li class="nav-item">
                         <a class="nav-link {{ Request::is('demandes-epaves*') ? 'active' : '' }}" href="{{ route('demandes-epaves.index') }}">
                             <i class="fas fa-car-crash me-2"></i> Gestion épave et vehicule
@@ -66,7 +67,7 @@
 
 
 
-                    @if(auth()->user()->role->value === 'casse')
+                    @if(auth()->user()->role->value == 'casse')
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('pieces*') ? 'active' : '' }}" href="{{ route('pieces.index') }}">
                                 <i class="fas fa-cog me-2"></i> Gestion des pièces
@@ -102,7 +103,7 @@
                     @endif
 
                     {{-- Menu Client --}}
-                    @if(auth()->user()->role->value === 'client')
+                    @if(auth()->user()->role->value == 'client')
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('pieces*') ? 'active' : '' }}" href="{{ route('pieces.index') }}">
                                 <i class="fas fa-cog me-2"></i> Rechercher pièces
@@ -135,7 +136,7 @@
                     @endif
 
                     {{-- Menu Admin --}}
-                    @if(auth()->user()->role->value === 'admin')
+                    @if(auth()->user()->role->value == 'admin')
                         <li class="nav-item">
                             <a class="nav-link {{ Request::is('admin/casses/pending*') ? 'active' : '' }}"
                                href="{{ route('admin.casses.pending') }}">
