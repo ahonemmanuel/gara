@@ -57,12 +57,15 @@
                 @auth
                     {{-- Menu Casse --}}
 
-                @if(auth()->user()->role->value == 'admin' || auth()->user()->role->value == 'casse') @endif
-                    <li class="nav-item">
-                        <a class="nav-link {{ Request::is('demandes-epaves*') ? 'active' : '' }}" href="{{ route('demandes-epaves.index') }}">
-                            <i class="fas fa-car-crash me-2"></i> Gestion épave et vehicule
-                        </a>
-                    </li>
+                @if(auth()->user()->role->value == 'client' || auth()->user()->role->value == 'casse')
+
+                        <li class="nav-item">
+                            <a class="nav-link {{ Request::is('demandes-epaves*') ? 'active' : '' }}" href="{{ route('demandes-epaves.index') }}">
+                                <i class="fas fa-car-crash me-2"></i> Gestion épave et vehicule
+                            </a>
+                        </li>
+                @endif
+
 
 
 

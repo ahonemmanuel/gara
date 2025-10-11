@@ -63,9 +63,7 @@
                         <i class="fas fa-list"></i> Toutes ({{ $stats['total'] }})
                     </button>
 
-                    <button class="btn btn-outline-danger" onclick="filterItems('vendu')">
-                        <i class="fas fa-check-double"></i> Vendues ({{ $stats['vendus'] }})
-                    </button>
+
                 </div>
             </div>
         </div>
